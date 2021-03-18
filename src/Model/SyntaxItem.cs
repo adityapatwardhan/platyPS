@@ -7,6 +7,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 {
     internal class SyntaxItem
     {
+        internal string CommandName { get; }
         internal string ParameterSetName { get; }
 
         // Sort parameters by position
@@ -20,10 +21,11 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
         internal bool IsDefaultParameterSet { get; }
 
-        internal SyntaxItem(string parameterSetName, bool isDefaultParameterSet)
+        internal SyntaxItem(string commandName, string parameterSetName, bool isDefaultParameterSet)
         {
             ParameterSetName = parameterSetName;
             IsDefaultParameterSet = isDefaultParameterSet;
+            CommandName = commandName;
 
             postitionalParameters = new SortedList<int, Parameter>();
             requiredParameters = new SortedList<string, Parameter>();
@@ -34,43 +36,49 @@ namespace Microsoft.PowerShell.PlatyPS.Model
         {
             string name = parameter.Name;
 
-            // First see if the parameter is positional
-            if (!string.IsNullOrEmpty(parameter.Position))
+            if (Constants.CommonParametersNames.Contains(name))
             {
-                int position = -1;
-
-                if (int.TryParse(parameter.Position, out position))
-                {
-                    postitionalParameters.Add(position, parameter);
-                }
-                else
-                {
-                    if (!string.Equals(parameter.Position, "Named", StringComparison.OrdinalIgnoreCase))
-                    {
-                        throw new InvalidCastException($"Invalid value '{parameter.Position}' provided for position for parameter '{name}'");
-                    }
-                }
+                return;
             }
+
+            // First see if the parameter is positional
+
+            int position = int.MinValue;
+
+            if (int.TryParse(parameter.Position, out position))
+            {
+                postitionalParameters.Add(position, parameter);
+                return;
+            }
+
+            // The position should be 'Named' if not a number
+            if (!string.Equals(parameter.Position, "Named", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidCastException($"Invalid value '{parameter.Position}' provided for position for parameter '{name}'");
+            }
+
             //Next see if the parameter is required
-            else if (parameter.Required)
+            if (parameter.Required)
             {
                 requiredParameters.Add(name, parameter);
+                return;
             }
+
             //Lastly add the parameter to alphabetic sorted list
-            else
-            {
-                alphabeticOrderParameters.Add(name, parameter);
-            }
+            alphabeticOrderParameters.Add(name, parameter);
         }
 
         internal string ToSyntaxString()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             sb.AppendFormat(IsDefaultParameterSet ? Constants.ParameterSetHeaderDefaultTemplate : Constants.ParameterSetHeaderTemplate, ParameterSetName);
             sb.AppendLine();
             sb.AppendLine();
             sb.AppendLine(Constants.CodeBlock);
+
+            sb.Append(CommandName);
+            sb.Append(Constants.SingleSpace);
 
             // look for all the positional parameters
             foreach (KeyValuePair<int, Parameter> kv in postitionalParameters)
@@ -98,8 +106,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
                 sb.Append(Constants.SingleSpace);
             }
 
-            // trim the last single space
-            sb.Remove(sb.Length - 1, 1);
+            sb.Append(Constants.SyntaxCommonParameters);
 
             // finish syntax
             sb.Append(Environment.NewLine);

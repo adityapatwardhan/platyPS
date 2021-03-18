@@ -35,17 +35,31 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
         internal List<string> AcceptedValues { get; private set; }
 
-        internal void AddRequiredParameterSets(bool required, IEnumerable<string> parameterSets)
+        internal void AddRequiredParameterSetsRange(bool required, IEnumerable<string> parameterSetNames)
         {
             if (required)
             {
                 RequiredTrueParameterSets ??= new List<string>();
-                RequiredTrueParameterSets.AddRange(parameterSets);
+                RequiredTrueParameterSets.AddRange(parameterSetNames);
             }
             else
             {
                 RequiredFalseParameterSets ??= new List<string>();
-                RequiredFalseParameterSets.AddRange(parameterSets);
+                RequiredFalseParameterSets.AddRange(parameterSetNames);
+            }
+        }
+
+        internal void AddRequiredParameterSets(bool required, string parameterSetName)
+        {
+            if (required)
+            {
+                RequiredTrueParameterSets ??= new List<string>();
+                RequiredTrueParameterSets.Add(parameterSetName);
+            }
+            else
+            {
+                RequiredFalseParameterSets ??= new List<string>();
+                RequiredFalseParameterSets.Add(parameterSetName);
             }
         }
 
@@ -55,7 +69,13 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             AcceptedValues.AddRange(values);
         }
 
-        internal void AddParameterSets(IEnumerable<string> values)
+        internal void AddParameterSet(string parameterSetName)
+        {
+            ParameterSets ??= new List<string>();
+            ParameterSets.Add(parameterSetName);
+        }
+
+        internal void AddParameterSetsRange(IEnumerable<string> values)
         {
             ParameterSets ??= new List<string>();
             ParameterSets.AddRange(values);
@@ -63,12 +83,17 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
         internal string ToParameterString()
         {
+            if (Constants.CommonParametersNames.Contains(Name))
+            {
+                return null;
+            }
+
             if (AcceptedValues?.Count <= 0)
             {
                 return string.Format(Constants.ParameterYmlBlock,
                     Name,
-                    Description,
-                    Type.Name,
+                    Description?.Trim(Environment.NewLine.ToCharArray()),
+                    Type?.Name,
                     string.Join(Constants.DelimiterComma, ParameterSets),
                     Aliases,
                     RequiredString(),
@@ -83,8 +108,8 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             {
                 return string.Format(Constants.ParameterYmlBlockWithAcceptedValues,
                     Name,
-                    Description,
-                    Type.Name,
+                    Description?.Trim(Environment.NewLine.ToCharArray()),
+                    Type?.Name,
                     ParameterSets?.Count > 0 ? string.Join(Constants.DelimiterComma, ParameterSets) : Constants.ParameterSetsAll,
                     Aliases,
                     AcceptedValues?.Count > 0 ? string.Join(Constants.DelimiterComma, AcceptedValues) : string.Empty,

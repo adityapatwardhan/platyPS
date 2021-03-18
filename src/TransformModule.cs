@@ -15,7 +15,7 @@ namespace Microsoft.PowerShell.PlatyPS
 
         internal override Collection<CommandHelp> Transform(string[] moduleNames)
         {
-            Collection<CommandHelp> cmdHelp = new Collection<CommandHelp>();
+            Collection<CommandHelp> cmdHelp = new();
 
             return cmdHelp;
         }
