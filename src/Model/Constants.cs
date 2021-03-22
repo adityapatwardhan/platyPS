@@ -45,6 +45,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
         internal const string NoneString = "None";
         internal const string NamedString = "Named";
         internal const string ParameterSetsAll = "(All)";
+        internal const string ParameterSetsAllForRequired = "All";
         internal const string DelimiterComma = ", ";
         internal const string SystemObjectTypename = "System.Object";
         internal const string SyntaxCommonParameters = "[<CommonParameters>]";

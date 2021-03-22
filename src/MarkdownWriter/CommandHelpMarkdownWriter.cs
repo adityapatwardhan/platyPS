@@ -28,7 +28,7 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             }
         }
 
-        internal void Write()
+        internal FileInfo Write()
         {
             sb ??= new StringBuilder();
 
@@ -63,6 +63,8 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             using (StreamWriter mdFileWriter = new(filePath))
             {
                 mdFileWriter.Write(sb.ToString());
+
+                return new FileInfo(filePath);
             }
         }
 

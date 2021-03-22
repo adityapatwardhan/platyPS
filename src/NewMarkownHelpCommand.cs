@@ -2,6 +2,7 @@
 using Microsoft.PowerShell.PlatyPS.Model;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
@@ -9,6 +10,7 @@ using System.Management.Automation.Runspaces;
 namespace Microsoft.PowerShell.PlatyPS
 {
     [Cmdlet(VerbsCommon.New, "MarkdownHelp", HelpUri="https://go.microsoft.com/fwlink/?LinkID=2096483")]
+    [OutputType(typeof(FileInfo[]))]
     public sealed class NewMarkdownHelpCommand : PSCmdlet
     {
         public NewMarkdownHelpCommand()
@@ -111,6 +113,8 @@ namespace Microsoft.PowerShell.PlatyPS
             //CommandHelpMarkdownWriter cmdWrt = new CommandHelpMarkdownWriter(@"D:\temp\Get-Help.md", cmdHlp);
             //cmdWrt.Write();
 
+            List<FileInfo> writtentFileList = new();
+
             if (string.Equals(this.ParameterSetName, "FromCommand", StringComparison.OrdinalIgnoreCase))
             {
                 TransformCommand transformCommand = new(session: null);
@@ -118,7 +122,7 @@ namespace Microsoft.PowerShell.PlatyPS
                 foreach (var cmdletHelp in transformCommand.Transform(Command))
                 {
                     CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp);
-                    cmdWrt.Write();
+                    writtentFileList.Add(cmdWrt.Write());
                 }
             }
 
@@ -129,9 +133,11 @@ namespace Microsoft.PowerShell.PlatyPS
                 foreach (var cmdletHelp in transformModule.Transform(Module))
                 {
                     CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp);
-                    cmdWrt.Write();
+                    writtentFileList.Add(cmdWrt.Write());
                 }
             }
+
+            WriteObject(writtentFileList);
         }
 
         private static CommandHelp GetMockCommandHelp()

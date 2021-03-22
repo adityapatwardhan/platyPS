@@ -51,15 +51,22 @@ namespace Microsoft.PowerShell.PlatyPS.Model
 
         internal void AddRequiredParameterSets(bool required, string parameterSetName)
         {
+            string updatedName = parameterSetName;
+
+            if (string.Equals(parameterSetName, "__AllParameterSets", StringComparison.OrdinalIgnoreCase))
+            {
+                updatedName = Constants.ParameterSetsAllForRequired;
+            }
+
             if (required)
             {
                 RequiredTrueParameterSets ??= new List<string>();
-                RequiredTrueParameterSets.Add(parameterSetName);
+                RequiredTrueParameterSets.Add(updatedName);
             }
             else
             {
                 RequiredFalseParameterSets ??= new List<string>();
-                RequiredFalseParameterSets.Add(parameterSetName);
+                RequiredFalseParameterSets.Add(updatedName);
             }
         }
 
@@ -72,7 +79,15 @@ namespace Microsoft.PowerShell.PlatyPS.Model
         internal void AddParameterSet(string parameterSetName)
         {
             ParameterSets ??= new List<string>();
-            ParameterSets.Add(parameterSetName);
+
+            if (string.Equals(parameterSetName, "__AllParameterSets", StringComparison.OrdinalIgnoreCase))
+            {
+                ParameterSets.Add(Constants.ParameterSetsAll);
+            }
+            else
+            {
+                ParameterSets.Add(parameterSetName);
+            }
         }
 
         internal void AddParameterSetsRange(IEnumerable<string> values)
