@@ -111,12 +111,26 @@ namespace Microsoft.PowerShell.PlatyPS
             //CommandHelpMarkdownWriter cmdWrt = new CommandHelpMarkdownWriter(@"D:\temp\Get-Help.md", cmdHlp);
             //cmdWrt.Write();
 
-            TransformCommand transformCommand = new(session: null);
-
-            foreach (var cmdletHelp in transformCommand.Transform(Command))
+            if (string.Equals(this.ParameterSetName, "FromCommand", StringComparison.OrdinalIgnoreCase))
             {
-                CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp);
-                cmdWrt.Write();
+                TransformCommand transformCommand = new(session: null);
+
+                foreach (var cmdletHelp in transformCommand.Transform(Command))
+                {
+                    CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp);
+                    cmdWrt.Write();
+                }
+            }
+
+            if (string.Equals(this.ParameterSetName, "FromModule", StringComparison.OrdinalIgnoreCase))
+            {
+                TransformModule transformModule = new(session: null);
+
+                foreach (var cmdletHelp in transformModule.Transform(Module))
+                {
+                    CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp);
+                    cmdWrt.Write();
+                }
             }
         }
 

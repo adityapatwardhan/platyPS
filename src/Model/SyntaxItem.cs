@@ -68,6 +68,41 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             alphabeticOrderParameters.Add(name, parameter);
         }
 
+        private string GetFormattedSyntaxParameter(string paramName, string paramTypeName, bool isPositional, bool isRequired)
+        {
+            bool isSwitchParam = string.Equals(paramTypeName, "SwitchParameter", StringComparison.OrdinalIgnoreCase);
+            string paramType = isSwitchParam ? string.Empty : paramTypeName;
+
+            if (isRequired && isPositional && isSwitchParam)
+            {
+                return string.Format(Constants.RequiredSwitchParamTemplate, paramName, paramType);
+            }
+            else if (isRequired && isPositional)
+            {
+                return string.Format(Constants.RequiredPositionalParamTemplate, paramName, paramType);
+            }
+            else if (isRequired && isSwitchParam)
+            {
+                return string.Format(Constants.RequiredSwitchParamTemplate, paramName, paramType);
+            }
+            else if (isRequired)
+            {
+                return string.Format(Constants.RequiredParamTemplate, paramName, paramType);
+            }
+            else if (!isRequired && isSwitchParam)
+            {
+                return string.Format(Constants.OptionalSwitchParamTemplate, paramName, paramType);
+            }
+            else if (isPositional)
+            {
+                return string.Format(Constants.OptionalPositionalParamTemplate, paramName, paramType);
+            }
+            else
+            {
+                return string.Format(Constants.OptionalParamTemplate, paramName, paramType);
+            }
+        }
+
         internal string ToSyntaxString()
         {
             StringBuilder sb = new();
@@ -86,7 +121,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
                 Parameter param = kv.Value;
 
                 // positional parameters can be required, so chose the template accordingly
-                sb.AppendFormat(param.Required? Constants.RequiredParamTemplate : Constants.OptionalParamTemplate, param.Name, param.Type.Name);
+                sb.Append(GetFormattedSyntaxParameter(param.Name, param.Type.Name, isPositional: true, isRequired: param.Required));
                 sb.Append(Constants.SingleSpace);
             }
 
@@ -94,7 +129,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             foreach(KeyValuePair<string, Parameter> kv in requiredParameters)
             {
                 Parameter param = kv.Value;
-                sb.AppendFormat(Constants.RequiredParamTemplate, param.Name, param.Type.Name);
+                sb.Append(GetFormattedSyntaxParameter(param.Name, param.Type.Name, isPositional: false, isRequired: true));
                 sb.Append(Constants.SingleSpace);
             }
 
@@ -102,7 +137,7 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             foreach (KeyValuePair<string, Parameter> kv in alphabeticOrderParameters)
             {
                 Parameter param = kv.Value;
-                sb.AppendFormat(Constants.OptionalParamTemplate, param.Name, param.Type.Name);
+                sb.Append(GetFormattedSyntaxParameter(param.Name, param.Type.Name, isPositional: false, isRequired: false));
                 sb.Append(Constants.SingleSpace);
             }
 

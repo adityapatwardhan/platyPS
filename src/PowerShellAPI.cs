@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
@@ -20,23 +19,32 @@ namespace Microsoft.PowerShell.PlatyPS
                 .Invoke<CommandInfo>();
         }
 
-        public static List<CmdletInfo> GetCmdletInfoFromModule(string moduleName)
+        public static Collection<CommandInfo> GetCmdletInfoFromModule(string moduleName)
         {
-            ps ??= System.Management.Automation.PowerShell.Create();
+            ps ??= System.Management.Automation.PowerShell.Create(RunspaceMode.CurrentRunspace);
             ps.Commands.Clear();
 
             Collection<PSModuleInfo> moduleInfo = ps
+                .AddCommand(@"Microsoft.PowerShell.Core\Import-Module")
+                .AddParameter("Name", moduleName)
+                .AddStatement()
                 .AddCommand(@"Microsoft.PowerShell.Core\Get-Module")
                 .AddParameter("Name", moduleName)
                 .Invoke<PSModuleInfo>();
 
-            List<CmdletInfo> cmdletInfos = new();
+            Collection<CommandInfo> cmdletInfos = new();
 
             if (moduleInfo != null)
             {
                 foreach (var mod in moduleInfo)
                 {
-                    cmdletInfos.AddRange(mod.ExportedCmdlets.Values);
+                    foreach (var cmdletInfo in mod.ExportedCommands.Values)
+                    {
+                        if (cmdletInfo.CommandType != CommandTypes.Alias)
+                        {
+                            cmdletInfos.Add(cmdletInfo);
+                        }
+                    }
                 }
             }
 

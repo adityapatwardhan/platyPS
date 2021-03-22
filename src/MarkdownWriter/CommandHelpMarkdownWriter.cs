@@ -125,6 +125,9 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             sb.AppendLine(Constants.ParametersMdHeader);
             sb.AppendLine();
 
+            // Sort the parameter by name before writing
+            Help.Parameters.Sort((u1, u2) => u1.Name.CompareTo(u2.Name));
+
             foreach(var param in Help.Parameters)
             {
                 string paramString = param.ToParameterString();
@@ -143,6 +146,11 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
         {
             sb.AppendLine(header);
             sb.AppendLine();
+
+            if (inputsoutputs == null)
+            {
+                return;
+            }
 
             foreach (var item in inputsoutputs)
             {

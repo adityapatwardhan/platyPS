@@ -28,8 +28,14 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
         internal const string ExampleItemHeaderTemplate = "### Example {0}: {1}";
 
         internal const string RequiredParamTemplate = "-{0} <{1}>";
-        internal const string OptionalParamTemplate = "[[-{0} <{1}>]";
-        internal const string SingleSpace = " ";
+        internal const string OptionalParamTemplate = "[-{0} <{1}>]";
+        internal const string RequiredPositionalParamTemplate = "[-{0}] <{1}>";
+        internal const string OptionalPositionalParamTemplate = "[[-{0} <{1}>]]";
+        internal const string OptionalSwitchParamTemplate = "[-{0}]";
+        internal const string RequiredSwitchParamTemplate = "-{0}";
+
+
+        internal const char   SingleSpace = ' ';
         internal const string ParameterSetHeaderDefaultTemplate = "### {0} (Default)";
         internal const string ParameterSetHeaderTemplate = "### {0}";
         internal const string CodeBlock = "```";
