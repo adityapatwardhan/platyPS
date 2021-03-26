@@ -70,7 +70,13 @@ namespace Microsoft.PowerShell.PlatyPS.Model
             }
         }
 
-        internal void AddAcceptedValues(IEnumerable<string> values)
+        internal void AddAcceptedValue(string value)
+        {
+            AcceptedValues ??= new List<string>();
+            AcceptedValues.Add(value);
+        }
+
+        internal void AddAcceptedValueRange(IEnumerable<string> values)
         {
             AcceptedValues ??= new List<string>();
             AcceptedValues.AddRange(values);

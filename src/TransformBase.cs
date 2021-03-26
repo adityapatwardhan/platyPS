@@ -186,6 +186,7 @@ namespace Microsoft.PowerShell.PlatyPS
             return syntaxItems;
         }
 
+
         protected static Parameter GetParameterInfo(CommandInfo cmdletInfo, dynamic helpItem, CommandParameterInfo paramInfo)
         {
             Parameter param = new Parameter();
@@ -238,7 +239,7 @@ namespace Microsoft.PowerShell.PlatyPS
                         break;
 
                     case ValidateSetAttribute validateSetAttribute:
-                        param.AddAcceptedValues(validateSetAttribute.ValidValues);
+                        param.AddAcceptedValueRange(validateSetAttribute.ValidValues);
                         break;
                 }
             }

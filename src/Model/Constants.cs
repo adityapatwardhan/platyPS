@@ -63,6 +63,19 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
         internal const string FillInParameterDescriptionTemplate = "{{ Fill {0} Description }}";
         internal const string FillInReleatedLinks = "{{ Fill in the related links here }}";
 
+        internal const string MamlCommandCommandTag = "command:command";
+        internal const string MamlCommandNameTag = "command:name";
+        internal const string MamlDescriptionTag = "maml:description";
+        internal const string MamlParaTag = "maml:para";
+        internal const string MamlSyntaxTag = "command:syntax";
+        internal const string MamlSyntaxItemTag = "command:syntaxItem";
+        internal const string MamlNameTag = "maml:name";
+        internal const string MamlCommandParameterTag = "command:parameter";
+        internal const string MamlCommandParameterValueTag = "command:parameterValue";
+        internal const string MamlDevTypeTag = "dev:type";
+        internal const string MamlDevDefaultValueTag = "dev:defaultValue";
+        internal const string MamlCommandParameterValueGroupTag = "command:parameterValueGroup";
+
         internal static HashSet<string> CommonParametersNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "Debug",
