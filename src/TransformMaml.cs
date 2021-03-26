@@ -84,16 +84,20 @@ namespace Microsoft.PowerShell.PlatyPS
         {
             Collection<SyntaxItem> items = new();
 
+            int unnamedParameterSetIndex = 1;
+
             if (reader.ReadToFollowing(Constants.MamlSyntaxTag))
             {
                 if(reader.ReadToDescendant(Constants.MamlSyntaxItemTag))
                 {
                     do
                     {
-                        items.Add(ReadSyntaxItem(reader.ReadSubtree()));
+                        items.Add(ReadSyntaxItem(reader.ReadSubtree(), unnamedParameterSetIndex));
 
                         // needed to go to next command:syntaxitem
                         reader.MoveToElement();
+
+                        unnamedParameterSetIndex++;
 
                     } while (reader.ReadToNextSibling(Constants.MamlSyntaxItemTag));
                 }
@@ -102,123 +106,128 @@ namespace Microsoft.PowerShell.PlatyPS
             return items;
         }
 
-        private SyntaxItem ReadSyntaxItem(XmlReader reader)
+        private SyntaxItem ReadSyntaxItem(XmlReader reader, int unnamedParameterSetIndex)
         {
             if (reader.ReadToDescendant(Constants.MamlNameTag))
             {
                 string commandName = reader.ReadElementContentAsString();
 
-                //Collection<CommandInfo> cmdInfo = PowerShellAPI.GetCommandInfo(commandName);
-
-                // @TODO Get parameter set name info
-                SyntaxItem syntaxItem = new SyntaxItem(commandName, parameterSetName: null, isDefaultParameterSet: false);
+                SyntaxItem syntaxItem = new SyntaxItem(
+                    commandName,
+                    string.Format(Constants.UnnamedParameterSetTemplate, unnamedParameterSetIndex),
+                    isDefaultParameterSet: false);
 
                 while (reader.ReadToNextSibling(Constants.MamlCommandParameterTag))
                 {
-                    Parameter parameter = new Parameter();
-
-                    if (reader.HasAttributes)
-                    {
-                        if (reader.MoveToAttribute("required"))
-                        {
-                            bool required;
-                            if (bool.TryParse(reader.Value, out required))
-                            {
-                                parameter.Required = required;
-                            }
-                        }
-
-                        if (reader.MoveToAttribute("variableLength"))
-                        {
-                            bool variableLength;
-                            if (bool.TryParse(reader.Value, out variableLength))
-                            {
-                                parameter.VariableLength = variableLength;
-                            }
-                        }
-
-                        if (reader.MoveToAttribute("globbing"))
-                        {
-                            bool globbing;
-                            if (bool.TryParse(reader.Value, out globbing))
-                            {
-                                parameter.Globbing = globbing;
-                            }
-                        }
-
-                        if (reader.MoveToAttribute("pipelineInput"))
-                        {
-                            // Value is like 'True (ByPropertyName, ByValue)' or 'False'
-                            parameter.PipelineInput = reader.Value.StartsWith(Constants.TrueString, StringComparison.OrdinalIgnoreCase) ? true : false;
-                        }
-
-                        if (reader.MoveToAttribute("position"))
-                        {
-                            // Value is like '0' or 'named'
-                            parameter.Position = reader.Value;
-                        }
-
-                        if (reader.MoveToAttribute("aliases"))
-                        {
-                            parameter.Aliases = reader.Value;
-                        }
-
-                        reader.MoveToElement();
-                    }
-
-                    if (reader.ReadToDescendant(Constants.MamlNameTag))
-                    {
-                        parameter.Name = reader.ReadElementContentAsString();
-                    }
-
-                    parameter.Description = ReadDescription(reader);
-
-                    if (reader.Read())
-                    {
-                        if (string.Equals(reader.Name, Constants.MamlCommandParameterValueGroupTag, StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (reader.ReadToDescendant(Constants.MamlCommandParameterValueTag))
-                            {
-                                do
-                                {
-                                    parameter.AddAcceptedValue(reader.ReadElementContentAsString());
-                                } while (reader.ReadToNextSibling(Constants.MamlCommandParameterValueTag));
-                            }
-                        }
-                        /*else if (string.Equals(reader.Name, Constants.MamlCommandParameterValueTag, StringComparison.OrdinalIgnoreCase))
-                        {
-                            //parameter.Type = Type.GetType(reader.ReadElementContentAsString());
-                            reader.MoveToElement();
-                            reader.ReadEndElement();
-                        }*/
-                    }
-
-                    if (reader.ReadToNextSibling(Constants.MamlDevTypeTag))
-                    {
-                        if (reader.ReadToDescendant(Constants.MamlNameTag))
-                        {
-                            parameter.Type = Type.GetType(reader.ReadElementContentAsString());
-                        }
-                    }
-
-                    if (reader.ReadToFollowing(Constants.MamlDevDefaultValueTag))
-                    {
-                        parameter.DefaultValue = reader.ReadElementContentAsString();
-                    }
-
-                    syntaxItem.AddParameter(parameter);
-
-                    // need to go the end of command:parameter
-                    if (reader.ReadState != ReadState.EndOfFile)
-                    {
-                        reader.ReadEndElement();
-                    }
+                    syntaxItem.AddParameter(ReadParameter(reader.ReadSubtree()));
                 }
 
                 return syntaxItem;
             }
 
             return null;
+        }
+
+        private Parameter ReadParameter(XmlReader reader)
+        {
+            Parameter parameter = new Parameter();
+
+            reader.Read();
+
+            if (reader.HasAttributes)
+            {
+                if (reader.MoveToAttribute("required"))
+                {
+                    bool required;
+                    if (bool.TryParse(reader.Value, out required))
+                    {
+                        parameter.Required = required;
+                    }
+                }
+
+                if (reader.MoveToAttribute("variableLength"))
+                {
+                    bool variableLength;
+                    if (bool.TryParse(reader.Value, out variableLength))
+                    {
+                        parameter.VariableLength = variableLength;
+                    }
+                }
+
+                if (reader.MoveToAttribute("globbing"))
+                {
+                    bool globbing;
+                    if (bool.TryParse(reader.Value, out globbing))
+                    {
+                        parameter.Globbing = globbing;
+                    }
+                }
+
+                if (reader.MoveToAttribute("pipelineInput"))
+                {
+                    // Value is like 'True (ByPropertyName, ByValue)' or 'False'
+                    parameter.PipelineInput = reader.Value.StartsWith(Constants.TrueString, StringComparison.OrdinalIgnoreCase) ? true : false;
+                }
+
+                if (reader.MoveToAttribute("position"))
+                {
+                    // Value is like '0' or 'named'
+                    parameter.Position = reader.Value;
+                }
+
+                if (reader.MoveToAttribute("aliases"))
+                {
+                    parameter.Aliases = reader.Value;
+                }
+
+                reader.MoveToElement();
+            }
+
+            if (reader.ReadToDescendant(Constants.MamlNameTag))
+            {
+                parameter.Name = reader.ReadElementContentAsString();
+            }
+
+            parameter.Description = ReadDescription(reader);
+
+            // We read the next element and check the name as it could parameterValue or parameterGroup or dev:type
+            while (reader.Read())
+            {
+                if (string.Equals(reader.Name, Constants.MamlCommandParameterValueTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    // needed to move the reader ahead. The element has type name but not always. dev:type is more reliable.
+                    _ = reader.ReadElementContentAsString();
+                }
+                else if (string.Equals(reader.Name, Constants.MamlCommandParameterValueGroupTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (reader.ReadToDescendant(Constants.MamlCommandParameterValueTag))
+                    {
+                        do
+                        {
+                            parameter.AddAcceptedValue(reader.ReadElementContentAsString());
+                        } while (reader.ReadToNextSibling(Constants.MamlCommandParameterValueTag));
+                    }
+                }
+                else if (string.Equals(reader.Name, Constants.MamlDevTypeTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (reader.ReadToDescendant(Constants.MamlNameTag))
+                    {
+                        parameter.Type = reader.ReadElementContentAsString();
+                    }
+                }
+                else if (string.Equals(reader.Name, Constants.MamlDevDefaultValueTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    parameter.DefaultValue = reader.ReadElementContentAsString();
+                }
+            }
+
+            // need to go the end of command:parameter
+            if (reader.ReadState != ReadState.EndOfFile)
+            {
+                reader.ReadEndElement();
+            }
+
+            return parameter;
         }
 
         private string ReadSynopsis(XmlReader reader)

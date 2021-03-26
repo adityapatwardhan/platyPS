@@ -159,7 +159,7 @@ namespace Microsoft.PowerShell.PlatyPS
 
             var nameParam = new Parameter {
                 Name = "Name",
-                Type = typeof(string),
+                Type = "string",
                 Required = true,
                 Position = "Named",
                 DefaultValue = "None",
@@ -175,7 +175,7 @@ Conceptual articles are in the HelpFile category."
 
             var pathParam = new Parameter {
                 Name = "Path",
-                Type = typeof(string),
+                Type = "string",
                 Required = false,
                 Position = "0",
                 DefaultValue = "None",

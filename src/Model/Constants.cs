@@ -75,6 +75,7 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
         internal const string MamlDevTypeTag = "dev:type";
         internal const string MamlDevDefaultValueTag = "dev:defaultValue";
         internal const string MamlCommandParameterValueGroupTag = "command:parameterValueGroup";
+        internal const string UnnamedParameterSetTemplate = "UNNAMED_PARAMETER_SET_{0}";
 
         internal static HashSet<string> CommonParametersNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {

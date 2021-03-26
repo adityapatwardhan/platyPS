@@ -100,7 +100,7 @@ namespace Microsoft.PowerShell.PlatyPS
                     string.Format(Constants.FillInParameterDescriptionTemplate, param.Name) :
                     descriptionFromHelp;
 
-                param.Type = parameterMetadata.Value.ParameterType;
+                param.Type = parameterMetadata.Value.ParameterType.Name;
 
                 GetParameterAtributeInfo(parameterMetadata.Value.Attributes, ref param);
 
@@ -200,7 +200,7 @@ namespace Microsoft.PowerShell.PlatyPS
                 string.Format(Constants.FillInParameterDescriptionTemplate, paramName) :
                 descriptionFromHelp;
 
-            param.Type = paramInfo.ParameterType;
+            param.Type = paramInfo.ParameterType.Name;
 
             param.AddParameterSetsRange(GetParameterSetsOfParameter(paramName, cmdletInfo));
 
