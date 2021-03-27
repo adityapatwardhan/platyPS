@@ -71,6 +71,11 @@ namespace Microsoft.PowerShell.PlatyPS
                 cmdHelp.Synopsis = ReadSynopsis(reader);
                 cmdHelp.Description = ReadDescription(reader);
                 cmdHelp.AddSyntaxItemRange(ReadSyntaxItems(reader));
+                cmdHelp.AddParameterRange(ReadParameters(reader));
+                cmdHelp.AddInputItem(ReadInput(reader));
+                cmdHelp.AddOutputItem(ReadOutput(reader));
+                cmdHelp.Notes = ReadNotes(reader);
+                cmdHelp.AddExampleItemRange(ReadExamples(reader));
             }
             else
             {
@@ -78,6 +83,175 @@ namespace Microsoft.PowerShell.PlatyPS
             }
 
             return cmdHelp;
+        }
+
+        private Collection<Example> ReadExamples(XmlReader reader)
+        {
+            Collection<Example> examples = new();
+
+            if (reader.ReadToFollowing(Constants.MamlCommandExamplesTag))
+            {
+                int exampleCounter = 1;
+
+                if (reader.ReadToDescendant(Constants.MamlCommandExampleTag))
+                {
+                    do
+                    {
+                        examples.Add(ReadExample(reader.ReadSubtree(), exampleCounter));
+
+                        reader.ReadEndElement();
+
+                        exampleCounter++;
+                    } while (reader.ReadToNextSibling(Constants.MamlCommandExampleTag));
+                }
+            }
+
+            return examples;
+        }
+
+        private Example ReadExample(XmlReader reader, int exampleCounter)
+        {
+            Example exp = new();
+
+            if (reader.ReadToFollowing(Constants.MamlTitleTag))
+            {
+                string title = reader.ReadElementContentAsString();
+                exp.Title = title.Trim(' ', '-').Replace($"Example {exampleCounter}: ", "");
+            }
+
+            if (reader.ReadToFollowing(Constants.MamlDevCodeTag))
+            {
+                exp.Code = reader.ReadElementContentAsString();
+            }
+
+            if (reader.ReadToFollowing(Constants.MamlDevRemarksTag))
+            {
+                StringBuilder remarks = new();
+
+                if (reader.ReadToDescendant(Constants.MamlParaTag))
+                {
+                    do
+                    {
+                        remarks.AppendLine(reader.ReadElementContentAsString());
+                        remarks.AppendLine();
+                    } while (reader.ReadToNextSibling(Constants.MamlParaTag));
+
+                    exp.Remarks = remarks.ToString();
+                }
+
+                if (reader.ReadState != ReadState.EndOfFile)
+                {
+                    reader.ReadEndElement();
+                }
+            }
+
+            return exp;
+        }
+
+
+        private string ReadNotes(XmlReader reader)
+        {
+            StringBuilder notes = new();
+
+            if (reader.ReadToFollowing(Constants.MamlAlertSetTag))
+            {
+                if (reader.ReadToDescendant(Constants.MamlAlertTag))
+                {
+                    if (reader.ReadToDescendant(Constants.MamlParaTag))
+                    {
+                        do
+                        {
+                            notes.AppendLine(reader.ReadElementContentAsString());
+                            notes.AppendLine();
+                        } while (reader.ReadToNextSibling(Constants.MamlParaTag));
+                    }
+                }
+            }
+
+            return notes.ToString();
+        }
+
+        private InputOutput ReadInput(XmlReader reader)
+        {
+            InputOutput inputItem = new();
+
+            if (reader.ReadToFollowing(Constants.MamlCommandInputTypesTag))
+            {
+                if (reader.ReadToDescendant(Constants.MamlCommandInputTypeTag))
+                {
+                    do
+                    {
+                        string typeName = null;
+                        string typeDescription = null;
+
+                        if (reader.ReadToFollowing(Constants.MamlNameTag))
+                        {
+                            typeName = reader.ReadElementContentAsString();
+                        }
+
+                        if (reader.ReadToFollowing(Constants.MamlParaTag))
+                        {
+                            typeDescription = reader.ReadElementContentAsString();
+                        }
+
+                        inputItem.AddInputOutputItem(typeName, typeDescription);
+
+                    } while (reader.ReadToNextSibling(Constants.MamlCommandInputTypeTag));
+
+                }
+            }
+
+            return inputItem;
+        }
+
+        private InputOutput ReadOutput(XmlReader reader)
+        {
+            InputOutput outputItem = new();
+
+            if (reader.ReadToFollowing(Constants.MamlCommandReturnValuesTag))
+            {
+                if (reader.ReadToDescendant(Constants.MamlCommandReturnValueTag))
+                {
+                    do
+                    {
+                        string typeName = null;
+                        string typeDescription = null;
+
+                        if (reader.ReadToFollowing(Constants.MamlNameTag))
+                        {
+                            typeName = reader.ReadElementContentAsString();
+                        }
+
+                        if (reader.ReadToFollowing(Constants.MamlParaTag))
+                        {
+                            typeDescription = reader.ReadElementContentAsString();
+                        }
+
+                        outputItem.AddInputOutputItem(typeName, typeDescription);
+
+                    } while (reader.ReadToNextSibling(Constants.MamlCommandReturnValueTag));
+                }
+            }
+
+            return outputItem;
+        }
+
+        private Collection<Parameter> ReadParameters(XmlReader reader)
+        {
+            Collection<Parameter> parameters = new();
+
+            if (reader.ReadToFollowing(Constants.MamlCommandParametersTag))
+            {
+                if (reader.ReadToDescendant(Constants.MamlCommandParameterTag))
+                {
+                    do
+                    {
+                        parameters.Add(ReadParameter(reader.ReadSubtree()));
+                    } while (reader.ReadToNextSibling(Constants.MamlCommandParameterTag));
+                }
+            }
+
+            return parameters;
         }
 
         private Collection<SyntaxItem> ReadSyntaxItems(XmlReader reader)
