@@ -76,6 +76,7 @@ namespace Microsoft.PowerShell.PlatyPS
                 cmdHelp.AddOutputItem(ReadOutput(reader));
                 cmdHelp.Notes = ReadNotes(reader);
                 cmdHelp.AddExampleItemRange(ReadExamples(reader));
+                cmdHelp.AddReleatedLinksRange(ReadRelatedLinks(reader));
             }
             else
             {
@@ -83,6 +84,40 @@ namespace Microsoft.PowerShell.PlatyPS
             }
 
             return cmdHelp;
+        }
+
+        private Collection<Links> ReadRelatedLinks(XmlReader reader)
+        {
+            Collection<Links> relatedLinks = new();
+
+            if (reader.ReadToFollowing(Constants.MamlCommandRelatedLinksTag))
+            {
+                if (reader.ReadToDescendant(Constants.MamlNavigationLinkTag))
+                {
+                    do
+                    {
+                        string linkText = null;
+                        string uri = null;
+
+                        if (reader.ReadToFollowing(Constants.MamlLinkTextTag))
+                        {
+                            linkText = reader.ReadElementContentAsString();
+                        }
+
+                        if (reader.ReadToFollowing(Constants.MamlUriTag))
+                        {
+                            uri = reader.ReadElementContentAsString();
+                        }
+
+                        relatedLinks.Add(new Links(uri, linkText));
+
+                        reader.ReadEndElement();
+
+                    } while (reader.ReadToNextSibling(Constants.MamlNavigationLinkTag));
+                }
+            }
+
+            return relatedLinks;
         }
 
         private Collection<Example> ReadExamples(XmlReader reader)

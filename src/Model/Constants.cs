@@ -88,6 +88,10 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
         internal const string MamlTitleTag = "maml:title";
         internal const string MamlDevCodeTag = "dev:code";
         internal const string MamlDevRemarksTag = "dev:remarks";
+        internal const string MamlCommandRelatedLinksTag = "command:relatedLinks";
+        internal const string MamlNavigationLinkTag = "maml:navigationLink";
+        internal const string MamlLinkTextTag = "maml:linkText";
+        internal const string MamlUriTag = "maml:uri";
 
         internal static HashSet<string> CommonParametersNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
