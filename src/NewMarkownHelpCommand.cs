@@ -121,7 +121,7 @@ namespace Microsoft.PowerShell.PlatyPS
 
                 foreach (var cmdletHelp in transformCommand.Transform(Command))
                 {
-                    CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp);
+                    CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp, Encoding);
                     writtentFileList.Add(cmdWrt.Write());
                 }
             }
@@ -132,7 +132,7 @@ namespace Microsoft.PowerShell.PlatyPS
 
                 foreach (var cmdletHelp in transformModule.Transform(Module))
                 {
-                    CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp);
+                    CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp, Encoding);
                     writtentFileList.Add(cmdWrt.Write());
                 }
             }
@@ -143,7 +143,7 @@ namespace Microsoft.PowerShell.PlatyPS
 
                 foreach (var cmdletHelp in transformMaml.Transform(MamlFile))
                 {
-                    CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp);
+                    CommandHelpMarkdownWriter cmdWrt = new($"{OutputFolder}\\{cmdletHelp.Title}.md", cmdletHelp, Encoding);
                     writtentFileList.Add(cmdWrt.Write());
                 }
             }

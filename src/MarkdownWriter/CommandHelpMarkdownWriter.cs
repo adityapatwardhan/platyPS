@@ -10,12 +10,12 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
 {
     internal class CommandHelpMarkdownWriter
     {
-        private string filePath;
+        private readonly string _filePath;
         private StringBuilder sb = null;
+        private readonly Encoding _encoding;
+        private readonly CommandHelp _help;
 
-        private CommandHelp Help { get; set; }
-
-        public CommandHelpMarkdownWriter(string path, CommandHelp commandHelp)
+        public CommandHelpMarkdownWriter(string path, CommandHelp commandHelp, Encoding encoding)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -23,8 +23,9 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             }
             else
             {
-                filePath = path;
-                Help = commandHelp;
+                _filePath = path;
+                _help = commandHelp;
+                _encoding = encoding;
             }
         }
 
@@ -52,27 +53,27 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
 
             WriteParameters();
 
-            WriteInputsOutputs(Help.Inputs, Constants.InputsMdHeader);
+            WriteInputsOutputs(_help.Inputs, Constants.InputsMdHeader);
 
-            WriteInputsOutputs(Help.Outputs, Constants.OutputsMdHeader);
+            WriteInputsOutputs(_help.Outputs, Constants.OutputsMdHeader);
 
             WriteNotes();
 
             WriteRelatedLinks();
 
-            using (StreamWriter mdFileWriter = new(filePath))
+            using (StreamWriter mdFileWriter = new(_filePath, append: false, _encoding))
             {
                 mdFileWriter.Write(sb.ToString());
 
-                return new FileInfo(filePath);
+                return new FileInfo(_filePath);
             }
         }
 
         private void WriteMetadataHeader()
         {
             sb.AppendLine(Constants.YmlHeader);
-            sb.AppendLine($"external help file: {Help.ModuleName}-help.xml");
-            sb.AppendLine($"Module Name: {Help.ModuleName}");
+            sb.AppendLine($"external help file: {_help.ModuleName}-help.xml");
+            sb.AppendLine($"Module Name: {_help.ModuleName}");
             sb.AppendLine("online version:");
             sb.AppendLine(Constants.SchemaVersionYml);
             sb.AppendLine(Constants.YmlHeader);
@@ -80,14 +81,14 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
 
         private void WriteTitle()
         {
-            sb.AppendLine($"# {Help.Title}");
+            sb.AppendLine($"# {_help.Title}");
         }
 
         private void WriteSynopsis()
         {
             sb.AppendLine(Constants.SynopsisMdHeader);
             sb.AppendLine();
-            sb.AppendLine(Help.Synopsis);
+            sb.AppendLine(_help.Synopsis);
         }
 
         private void WriteSyntax()
@@ -95,7 +96,7 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             sb.AppendLine(Constants.SyntaxMdHeader);
             sb.AppendLine();
 
-            foreach(SyntaxItem item in Help.Syntax)
+            foreach(SyntaxItem item in _help.Syntax)
             {
                 sb.AppendLine(item.ToSyntaxString());
             }
@@ -105,7 +106,7 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
         {
             sb.AppendLine(Constants.DescriptionMdHeader);
             sb.AppendLine();
-            sb.AppendLine(Help.Description);
+            sb.AppendLine(_help.Description);
         }
 
         private void WriteExamples()
@@ -113,11 +114,11 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             sb.AppendLine(Constants.ExamplesMdHeader);
             sb.AppendLine();
 
-            int totalExamples = Help.Examples.Count;
+            int totalExamples = _help.Examples.Count;
 
             for(int i = 0; i < totalExamples; i++)
             {
-                sb.Append(Help.Examples[i].ToExampleItemString(i + 1));
+                sb.Append(_help.Examples[i].ToExampleItemString(i + 1));
                 sb.AppendLine();
             }
         }
@@ -128,9 +129,9 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             sb.AppendLine();
 
             // Sort the parameter by name before writing
-            Help.Parameters.Sort((u1, u2) => u1.Name.CompareTo(u2.Name));
+            _help.Parameters.Sort((u1, u2) => u1.Name.CompareTo(u2.Name));
 
-            foreach(var param in Help.Parameters)
+            foreach(var param in _help.Parameters)
             {
                 string paramString = param.ToParameterString();
 
@@ -164,7 +165,7 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
         {
             sb.AppendLine(Constants.NotesMdHeader);
             sb.AppendLine();
-            sb.AppendLine(Help.Notes);
+            sb.AppendLine(_help.Notes);
             sb.AppendLine();
         }
 
@@ -173,9 +174,9 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             sb.AppendLine(Constants.RelatedLinksMdHeader);
             sb.AppendLine();
 
-            if (Help.RelatedLinks?.Count > 0)
+            if (_help.RelatedLinks?.Count > 0)
             {
-                foreach(var link in Help.RelatedLinks)
+                foreach(var link in _help.RelatedLinks)
                 {
                     sb.AppendLine(link.ToRelatedLinksString());
                     sb.AppendLine();
