@@ -14,6 +14,9 @@ namespace Microsoft.PowerShell.PlatyPS
 {
     internal class TransformMaml : TransformBase
     {
+        // Dictionary of parameter name -> parameterset which it belongs
+        private Dictionary<string, List<string>> paramSetMap = new();
+
         public TransformMaml(PSSession session) : base(session)
         {
         }
@@ -68,15 +71,25 @@ namespace Microsoft.PowerShell.PlatyPS
             if (reader.ReadToFollowing(Constants.MamlCommandNameTag))
             {
                 cmdHelp.Title = reader.ReadElementContentAsString();
+
+                Collection<CommandInfo> cmdInfo = PowerShellAPI.GetCommandInfo(cmdHelp.Title);
+
+                if (cmdInfo.Count != 1)
+                {
+                    throw new InvalidOperationException("Too many command infos");
+                }
+
                 cmdHelp.Synopsis = ReadSynopsis(reader);
                 cmdHelp.Description = ReadDescription(reader);
-                cmdHelp.AddSyntaxItemRange(ReadSyntaxItems(reader));
-                cmdHelp.AddParameterRange(ReadParameters(reader));
+                cmdHelp.AddSyntaxItemRange(ReadSyntaxItems(reader, cmdInfo[0]));
+                cmdHelp.AddParameterRange(ReadParameters(reader, cmdHelp.Syntax.Count));
                 cmdHelp.AddInputItem(ReadInput(reader));
                 cmdHelp.AddOutputItem(ReadOutput(reader));
                 cmdHelp.Notes = ReadNotes(reader);
                 cmdHelp.AddExampleItemRange(ReadExamples(reader));
                 cmdHelp.AddReleatedLinksRange(ReadRelatedLinks(reader));
+
+                paramSetMap.Clear();
             }
             else
             {
@@ -271,7 +284,7 @@ namespace Microsoft.PowerShell.PlatyPS
             return outputItem;
         }
 
-        private Collection<Parameter> ReadParameters(XmlReader reader)
+        private Collection<Parameter> ReadParameters(XmlReader reader, int parameterSetCount)
         {
             Collection<Parameter> parameters = new();
 
@@ -281,7 +294,7 @@ namespace Microsoft.PowerShell.PlatyPS
                 {
                     do
                     {
-                        parameters.Add(ReadParameter(reader.ReadSubtree()));
+                        parameters.Add(ReadParameter(reader.ReadSubtree(), parameterSetCount));
                     } while (reader.ReadToNextSibling(Constants.MamlCommandParameterTag));
                 }
             }
@@ -289,7 +302,7 @@ namespace Microsoft.PowerShell.PlatyPS
             return parameters;
         }
 
-        private Collection<SyntaxItem> ReadSyntaxItems(XmlReader reader)
+        private Collection<SyntaxItem> ReadSyntaxItems(XmlReader reader, CommandInfo cmdInfo)
         {
             Collection<SyntaxItem> items = new();
 
@@ -301,7 +314,10 @@ namespace Microsoft.PowerShell.PlatyPS
                 {
                     do
                     {
-                        items.Add(ReadSyntaxItem(reader.ReadSubtree(), unnamedParameterSetIndex));
+                        var unnamedParameterSetName = string.Format(Constants.UnnamedParameterSetTemplate, unnamedParameterSetIndex);
+
+                        var syn = ReadSyntaxItem(reader.ReadSubtree(), unnamedParameterSetName);
+                        items.Add(syn);
 
                         // needed to go to next command:syntaxitem
                         reader.MoveToElement();
@@ -315,7 +331,7 @@ namespace Microsoft.PowerShell.PlatyPS
             return items;
         }
 
-        private SyntaxItem ReadSyntaxItem(XmlReader reader, int unnamedParameterSetIndex)
+        private SyntaxItem ReadSyntaxItem(XmlReader reader, string unnamedParameterSetName)
         {
             if (reader.ReadToDescendant(Constants.MamlNameTag))
             {
@@ -323,12 +339,24 @@ namespace Microsoft.PowerShell.PlatyPS
 
                 SyntaxItem syntaxItem = new SyntaxItem(
                     commandName,
-                    string.Format(Constants.UnnamedParameterSetTemplate, unnamedParameterSetIndex),
+                    unnamedParameterSetName,
                     isDefaultParameterSet: false);
 
                 while (reader.ReadToNextSibling(Constants.MamlCommandParameterTag))
                 {
-                    syntaxItem.AddParameter(ReadParameter(reader.ReadSubtree()));
+                    syntaxItem.AddParameter(ReadParameter(reader.ReadSubtree(), parameterSetCount: -1));
+                }
+
+                foreach(var paramName in syntaxItem.ParameterNames)
+                {
+                    if (paramSetMap.ContainsKey(paramName))
+                    {
+                        paramSetMap[paramName].Add(unnamedParameterSetName);
+                    }
+                    else
+                    {
+                        paramSetMap.Add(paramName, new List<string>() { unnamedParameterSetName });
+                    }
                 }
 
                 return syntaxItem;
@@ -337,7 +365,7 @@ namespace Microsoft.PowerShell.PlatyPS
             return null;
         }
 
-        private Parameter ReadParameter(XmlReader reader)
+        private Parameter ReadParameter(XmlReader reader, int parameterSetCount)
         {
             Parameter parameter = new Parameter();
 
@@ -434,6 +462,20 @@ namespace Microsoft.PowerShell.PlatyPS
             if (reader.ReadState != ReadState.EndOfFile)
             {
                 reader.ReadEndElement();
+            }
+
+            // Update parameter.ParameterSets only if we are reading for parameters. Not for syntax.
+            if (parameterSetCount != -1)
+            {
+                if (paramSetMap.TryGetValue(parameter.Name, out List<string> paramSetList))
+                {
+                    // If the parameter is in all parameter sets then dont add.
+                    // This ensures it is marked as present in all parameter sets.
+                    if (paramSetList.Count != parameterSetCount)
+                    {
+                        parameter.AddParameterSetsRange(paramSetList);
+                    }
+                }
             }
 
             return parameter;
