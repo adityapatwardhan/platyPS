@@ -13,10 +13,11 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
         private readonly string _filePath;
         private StringBuilder sb = null;
         private readonly Encoding _encoding;
-        private readonly CommandHelp _help;
 
-        public CommandHelpMarkdownWriter(string path, CommandHelp commandHelp, Encoding encoding)
+        public CommandHelpMarkdownWriter(MarkdownWriterSettings settings)
         {
+            string path = settings.DestinationPath;
+
             if (string.IsNullOrEmpty(path))
             {
                 throw new ArgumentNullException(nameof(path));
@@ -24,42 +25,44 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             else
             {
                 _filePath = path;
-                _help = commandHelp;
-                _encoding = encoding;
+                _encoding = settings.Encoding;
             }
         }
 
-        internal FileInfo Write()
+        internal FileInfo Write(CommandHelp help, bool includeMetadata)
         {
             sb ??= new StringBuilder();
 
-            WriteMetadataHeader();
+            if (includeMetadata)
+            {
+                WriteMetadataHeader(help);
+                sb.AppendLine();
+            }
+
+            WriteTitle(help);
             sb.AppendLine();
 
-            WriteTitle();
-            sb.AppendLine();
-
-            WriteSynopsis();
+            WriteSynopsis(help);
             sb.AppendLine();
 
             // this adds an empty line after all parameters
-            WriteSyntax();
+            WriteSyntax(help);
 
-            WriteDescription();
+            WriteDescription(help);
             sb.AppendLine();
 
-            WriteExamples();
+            WriteExamples(help);
             sb.AppendLine();
 
-            WriteParameters();
+            WriteParameters(help);
 
-            WriteInputsOutputs(_help.Inputs, Constants.InputsMdHeader);
+            WriteInputsOutputs(help.Inputs, Constants.InputsMdHeader);
 
-            WriteInputsOutputs(_help.Outputs, Constants.OutputsMdHeader);
+            WriteInputsOutputs(help.Outputs, Constants.OutputsMdHeader);
 
-            WriteNotes();
+            WriteNotes(help);
 
-            WriteRelatedLinks();
+            WriteRelatedLinks(help);
 
             using (StreamWriter mdFileWriter = new(_filePath, append: false, _encoding))
             {
@@ -69,69 +72,69 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             }
         }
 
-        private void WriteMetadataHeader()
+        private void WriteMetadataHeader(CommandHelp help)
         {
             sb.AppendLine(Constants.YmlHeader);
-            sb.AppendLine($"external help file: {_help.ModuleName}-help.xml");
-            sb.AppendLine($"Module Name: {_help.ModuleName}");
-            sb.AppendLine("online version:");
+            sb.AppendLine($"external help file: {help.ModuleName}-help.xml");
+            sb.AppendLine($"Module Name: {help.ModuleName}");
+            sb.AppendLine($"online version: {help.OnlineVersionUrl}");
             sb.AppendLine(Constants.SchemaVersionYml);
             sb.AppendLine(Constants.YmlHeader);
         }
 
-        private void WriteTitle()
+        private void WriteTitle(CommandHelp help)
         {
-            sb.AppendLine($"# {_help.Title}");
+            sb.AppendLine($"# {help.Title}");
         }
 
-        private void WriteSynopsis()
+        private void WriteSynopsis(CommandHelp help)
         {
             sb.AppendLine(Constants.SynopsisMdHeader);
             sb.AppendLine();
-            sb.AppendLine(_help.Synopsis);
+            sb.AppendLine(help.Synopsis);
         }
 
-        private void WriteSyntax()
+        private void WriteSyntax(CommandHelp help)
         {
             sb.AppendLine(Constants.SyntaxMdHeader);
             sb.AppendLine();
 
-            foreach(SyntaxItem item in _help.Syntax)
+            foreach(SyntaxItem item in help.Syntax)
             {
                 sb.AppendLine(item.ToSyntaxString());
             }
         }
 
-        private void WriteDescription()
+        private void WriteDescription(CommandHelp help)
         {
             sb.AppendLine(Constants.DescriptionMdHeader);
             sb.AppendLine();
-            sb.AppendLine(_help.Description);
+            sb.AppendLine(help.Description);
         }
 
-        private void WriteExamples()
+        private void WriteExamples(CommandHelp help)
         {
             sb.AppendLine(Constants.ExamplesMdHeader);
             sb.AppendLine();
 
-            int totalExamples = _help.Examples.Count;
+            int totalExamples = help.Examples.Count;
 
             for(int i = 0; i < totalExamples; i++)
             {
-                sb.Append(_help.Examples[i].ToExampleItemString(i + 1));
+                sb.Append(help.Examples[i].ToExampleItemString(i + 1));
                 sb.AppendLine();
             }
         }
 
-        private void WriteParameters()
+        private void WriteParameters(CommandHelp help)
         {
             sb.AppendLine(Constants.ParametersMdHeader);
             sb.AppendLine();
 
             // Sort the parameter by name before writing
-            _help.Parameters.Sort((u1, u2) => u1.Name.CompareTo(u2.Name));
+            help.Parameters.Sort((u1, u2) => u1.Name.CompareTo(u2.Name));
 
-            foreach(var param in _help.Parameters)
+            foreach(var param in help.Parameters)
             {
                 string paramString = param.ToParameterString();
 
@@ -161,22 +164,22 @@ namespace Microsoft.PowerShell.PlatyPS.MarkdownWriter
             }
         }
 
-        private void WriteNotes()
+        private void WriteNotes(CommandHelp help)
         {
             sb.AppendLine(Constants.NotesMdHeader);
             sb.AppendLine();
-            sb.AppendLine(_help.Notes);
+            sb.AppendLine(help.Notes);
             sb.AppendLine();
         }
 
-        private void WriteRelatedLinks()
+        private void WriteRelatedLinks(CommandHelp help)
         {
             sb.AppendLine(Constants.RelatedLinksMdHeader);
             sb.AppendLine();
 
-            if (_help.RelatedLinks?.Count > 0)
+            if (help.RelatedLinks?.Count > 0)
             {
-                foreach(var link in _help.RelatedLinks)
+                foreach(var link in help.RelatedLinks)
                 {
                     sb.AppendLine(link.ToRelatedLinksString());
                     sb.AppendLine();

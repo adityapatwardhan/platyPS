@@ -17,13 +17,18 @@ namespace Microsoft.PowerShell.PlatyPS
         // Dictionary of parameter name -> parameterset which it belongs
         private Dictionary<string, List<string>> paramSetMap = new();
 
-        public TransformMaml(PSSession session) : base(session)
+        public TransformMaml(TransformSettings settings) : base(settings)
         {
         }
 
         internal override Collection<CommandHelp> Transform(string[] mamlFileNames)
         {
             Collection<CommandHelp> cmdHelp = new();
+
+            if (Settings.Session != null)
+            {
+                PowerShellAPI.InitializeRemoteSession(Settings.Session);
+            }
 
             foreach (var file in mamlFileNames)
             {
@@ -38,12 +43,17 @@ namespace Microsoft.PowerShell.PlatyPS
                 }
             }
 
+            PowerShellAPI.Reset();
+
             return cmdHelp;
         }
 
         private Collection<CommandHelp> ReadMaml(string mamlFile)
         {
             Collection<CommandHelp> commandHelps = new();
+
+            var mamlFileInfo = new FileInfo(mamlFile);
+            string moduleName = mamlFileInfo.Name.Remove(mamlFileInfo.Name.Length - Constants.MamlFileExtensionSuffix.Length);
 
             using StreamReader stream = new(mamlFile);
 
@@ -58,7 +68,9 @@ namespace Microsoft.PowerShell.PlatyPS
 
             while (reader.ReadToFollowing(Constants.MamlCommandCommandTag))
             {
-                commandHelps.Add(ReadCommand(reader.ReadSubtree()));
+                var cmdHelp = ReadCommand(reader.ReadSubtree());
+                cmdHelp.ModuleName = moduleName;
+                commandHelps.Add(cmdHelp);
             }
 
             return commandHelps;
@@ -88,6 +100,8 @@ namespace Microsoft.PowerShell.PlatyPS
                 cmdHelp.Notes = ReadNotes(reader);
                 cmdHelp.AddExampleItemRange(ReadExamples(reader));
                 cmdHelp.AddReleatedLinksRange(ReadRelatedLinks(reader));
+                cmdHelp.Locale = Settings.Locale;
+                cmdHelp.ModuleGuid = Settings.ModuleGuid;
 
                 paramSetMap.Clear();
             }
