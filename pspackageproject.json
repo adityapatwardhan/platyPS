@@ -1,0 +1,9 @@
+{
+  "HelpPath": "help",
+  "Culture": "en-US",
+  "BuildOutputPath": "out",
+  "ModuleName": "platyPS",
+  "TestPath": "test",
+  "SignedOutputPath": "signed",
+  "SourcePath": "src"
+}
